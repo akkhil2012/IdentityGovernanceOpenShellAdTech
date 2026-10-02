@@ -1,0 +1,41 @@
+{
+  "document": "schema-neutral-policy-contract",
+  "agent": "profile",
+  "identity": "agent:profile",
+  "filesystem": {
+    "read_only": [
+      "/opt/worker",
+      "/etc/ssl/certs"
+    ],
+    "read_write": [
+      "/tmp"
+    ],
+    "deny_host_mounts": true
+  },
+  "process": {
+    "entrypoint": [
+      "uvicorn",
+      "worker:app"
+    ],
+    "deny_shell_and_privilege_escalation": true
+  },
+  "network": {
+    "allow_named_destinations": [
+      "broker"
+    ],
+    "default": "deny"
+  },
+  "credentials": {
+    "allow": [],
+    "deny_host_admin": true
+  },
+  "business_scope": {
+    "capabilities": [
+      "read_profile"
+    ],
+    "resources": [
+      "profile.allowed"
+    ],
+    "max_records_per_task": 1000
+  }
+}
