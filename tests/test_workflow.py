@@ -31,3 +31,14 @@ def test_unknown_outcome_is_not_retried(client):
     body={"workflow_id":result["workflow_id"],"idempotency_key":"unknown"}
     first=client.post("/api/activate",json=body).json(); retry=client.post("/api/activate",json=body).json()
     assert first["decision"]=="REVIEW" and retry["status"]=="unknown" and retry["idempotent_replay"]
+
+def test_fabio_identity_anti_pattern_and_runtime_fix(client):
+    unsafe=run(client,"fabio_static_identity")
+    assert unsafe["identity_evidence"]["principal"]=="user:fabio"
+    assert unsafe["identity_evidence"]["outcome"]=="EXECUTED_OUT_OF_SCOPE"
+    fixed=run(client,"runtime_agent_identity")
+    assert fixed["decision"]=="GO"
+    assert fixed["identity_evidence"]["principal"]=="agent:activation"
+    assert fixed["identity_evidence"]["on_behalf_of"]=="Fabio"
+    assert fixed["identity_evidence"]["outcome"]=="BLOCKED_OUT_OF_SCOPE"
+    assert fixed["identity_evidence"]["allowed_operation"]=="activate"

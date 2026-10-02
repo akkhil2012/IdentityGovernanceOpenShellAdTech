@@ -1,3 +1,5 @@
+# These are the immutable workload images deployed into NVIDIA OpenShell
+# sandboxes. Compose builds images only; OpenShell remains the runtime boundary.
 services:
   intent: {build: {context: .., dockerfile: agents/Dockerfile.worker, args: {AGENT_NAME: intent}}, image: governed-audience/intent:0.1.0}
   profile: {build: {context: .., dockerfile: agents/Dockerfile.worker, args: {AGENT_NAME: profile}}, image: governed-audience/profile:0.1.0}

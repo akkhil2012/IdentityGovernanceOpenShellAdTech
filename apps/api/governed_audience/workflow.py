@@ -17,6 +17,8 @@ from .scoring import generate_profiles, score
 
 
 SCENARIOS = {
+    "fabio_static_identity": "Unsafe: agent inherits Fabio's user identity",
+    "runtime_agent_identity": "Fixed: determine the agent identity at runtime",
     "authorized_success": "Authorized successful activation",
     "missing_consent": "High propensity with missing consent",
     "consent_withdrawal": "Consent withdrawal after approval",
@@ -68,6 +70,11 @@ class Coordinator:
             wf = Workflow(id=wid, state="running", scenario=scenario, brief_json=brief.model_dump_json(), created_at=datetime.now(timezone.utc))
             db.add(wf); db.commit()
             timeline, grants = [], []
+            identity_evidence = {
+                "on_behalf_of": "Fabio",
+                "human_identity_is_authority": scenario == "fabio_static_identity",
+                "explanation": "Fabio supplied the intent; the autonomous agent remains a distinct runtime principal.",
+            }
             root = self.gov.mint(subject="coordinator", task=task, purpose=brief.purpose,
                 capabilities=["interpret", "read_profile", "score", "build_audience", "check_consent", "activate"],
                 resources=["campaign", "profile.allowed", "scores", "consent", "audience"], destinations=[brief.destination], record_budget=6000, actor="coordinator")
@@ -78,6 +85,17 @@ class Coordinator:
                     requested_cap = "admin" if scenario == "capability_escalation" and agent == "audience" else cap
                     child = self.gov.mint(subject=f"agent:{agent}", task=task, purpose=brief.purpose, capabilities=[requested_cap], resources=[resource], destinations=[brief.destination], record_budget=1000, actor=f"agent:{agent}", parent=root)
                     grants.append(child)
+                    if scenario == "fabio_static_identity" and agent == "activation":
+                        # Deliberately model the anti-pattern without performing a real export:
+                        # a shared user credential makes an out-of-scope operation appear valid.
+                        timeline.append({"agent":agent,"status":"ok","sandbox_id":getattr(self.settings, f"{agent}_sandbox_id"),"governance":"BYPASSED — Fabio IAM","reason":"export_raw_profiles executed outside the activation agent scope"})
+                        identity_evidence |= {"principal":"user:fabio","attempted":"export_raw_profiles","outcome":"EXECUTED_OUT_OF_SCOPE","risk":"The audit trail attributes autonomous behavior to a human user."}
+                        continue
+                    if scenario == "runtime_agent_identity" and agent == "activation":
+                        try:
+                            self.gov.validate(db, child, actor=f"agent:{agent}", task=task, capability="export_raw_profiles", resource="profile.raw", destination=brief.destination, records=1, nonce=f"{child.claims.nonce}:probe")
+                        except GovernanceDenied as exc:
+                            identity_evidence |= {"principal":"agent:activation","runtime_grant":child.claims.grant_id,"attempted":"export_raw_profiles","outcome":"BLOCKED_OUT_OF_SCOPE","reason":str(exc),"allowed_operation":"activate"}
                     if scenario == "grant_revocation" and agent == "activation": self.gov.revoke(db, child.claims.grant_id)
                     if scenario == "forbidden_field" and agent == "profile": resource = "profile.ssn"
                     if scenario == "forbidden_network" and agent == "activation":
@@ -112,10 +130,10 @@ class Coordinator:
             if scenario == "audience_mutation": approval_digest = digest(approved + [{"customer_id":"MUTATED","score":1}])
             else: approval_digest = audience_digest
             hard_no = scenario == "missing_consent" and not self._current_consent(db, "C0029", brief)
-            decision = "NO-GO" if hard_no else ("REVIEW" if not approved else "GO")
-            result = {"decision":decision,"reason":"required consent missing" if hard_no else "policy checks passed",
+            decision = "NO-GO" if hard_no else ("REVIEW" if scenario == "fabio_static_identity" or not approved else "GO")
+            result = {"decision":decision,"reason":"required consent missing" if hard_no else ("unsafe shared user identity allowed an out-of-scope action" if scenario == "fabio_static_identity" else "runtime agent identity and policy checks passed"),
                 "timeline":timeline,"funnel":{"generated":1000,"eligible":len(profiles),"approved":len(approved),"excluded":excluded},
-                "audience_digest":audience_digest,"grants":[g.claims.model_dump(mode="json") for g in grants]}
+                "audience_digest":audience_digest,"grants":[g.claims.model_dump(mode="json") for g in grants], "identity_evidence":identity_evidence}
             wf.state=decision.lower(); wf.audience_json=json.dumps(approved); wf.audience_digest=audience_digest; wf.approval_digest=approval_digest; wf.result_json=json.dumps(result); db.commit()
             audit(db, wid, "workflow.decided", {"decision":decision,"audience_count":len(approved)})
             return result | {"workflow_id":wid,"mode":self.settings.run_mode}
