@@ -1,5 +1,7 @@
 FROM python:3.12.10-slim
 ARG AGENT_NAME
+LABEL org.opencontainers.image.title="Governed Audience OpenShell worker" \
+      com.nvidia.openshell.workload="agent"
 ENV AGENT_NAME=$AGENT_NAME PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /opt/worker
 COPY requirements.lock /tmp/requirements.lock

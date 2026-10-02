@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import Boolean, DateTime, Integer, String, Text, UniqueConstraint, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from .config import Settings
 
@@ -69,6 +70,10 @@ class AuditEvent(Base):
 
 def database(settings: Settings):
     kwargs = {"connect_args": {"check_same_thread": False}} if settings.database_url.startswith("sqlite") else {}
+    # Keep an in-memory SQLite database on one connection so API test threads
+    # observe the schema and state created during application initialization.
+    if settings.database_url in {"sqlite://", "sqlite:///:memory:"}:
+        kwargs["poolclass"] = StaticPool
     engine = create_engine(settings.database_url, **kwargs)
     Base.metadata.create_all(engine)
     return sessionmaker(engine, expire_on_commit=False)

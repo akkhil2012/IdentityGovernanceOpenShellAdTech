@@ -28,7 +28,7 @@ class GovernanceService:
     def _sign(self, claims: Grant) -> str:
         return hmac.new(self.key, self._canonical(claims), hashlib.sha256).hexdigest()
 
-    def mint(self, *, subject: str, task: str, purpose: str, capabilities: list[str], resources: list[str], destinations: list[str], record_budget: int, actor: str, parent: SignedGrant | None = None) -> SignedGrant:
+    def mint(self, *, subject: str, task: str, purpose: str, capabilities: list[str], resources: list[str], destinations: list[str], record_budget: int, actor: str, parent: SignedGrant | None = None, on_behalf_of: str = "Fabio") -> SignedGrant:
         if parent:
             p = parent.claims
             if not set(capabilities) <= set(p.capabilities) or not set(resources) <= set(p.resources) or not set(destinations) <= set(p.destinations):
@@ -43,6 +43,7 @@ class GovernanceService:
             destinations=destinations, record_budget=record_budget,
             expires_at=datetime.now(timezone.utc) + timedelta(minutes=5),
             policy_version=self.policy_version, actor=actor, nonce=secrets.token_hex(12),
+            on_behalf_of=on_behalf_of,
         )
         return SignedGrant(claims=claims, signature=self._sign(claims))
 

@@ -2,6 +2,8 @@
 
 `governed-audience` is a reference AdTech/CDP control room. It turns a campaign brief into an eligibility-filtered, propensity-ranked audience, then issues a **GO**, **REVIEW**, or **NO-GO** decision. The demo keeps intent, profile data, model scores, consent, governance authority, and activation execution separate.
 
+The headline demonstration compares **Unsafe: agent inherits Fabio's user identity** with **Fixed: determine the agent identity at runtime**. Fabio is recorded as the human on whose behalf the task was requested, never as the autonomous workload principal. The unsafe scenario shows a raw-profile export apparently succeeding outside the activation agent's scope; the fixed scenario blocks that same operation and permits only the task-bound activation. See [`docs/runtime-identity.md`](docs/runtime-identity.md).
+
 > **Safety boundary:** the default `simulation` mode is conspicuously labeled and does not provide process isolation. `openshell` mode never falls back: startup fails unless a broker secret and six sandbox IDs are supplied. The destination is always a local mock; nothing sends ads or email.
 
 ## Quick start (deterministic simulation)
@@ -40,7 +42,7 @@ The coordinator has an optional Google ADK dependency for real deployments. Its 
 * `apps/api/governed_audience`: FastAPI API, coordinator, deterministic scoring, governance and mock activation.
 * `apps/web`: React/Vite campaign control room.
 * `migrations`: PostgreSQL schema; the API also creates equivalent tables for a local demo.
-* `agents`: one image entry point and least-authority policy template per specialist.
+* `agents`: one NVIDIA OpenShell workload image entry point and least-authority policy template per specialist.
 * `scripts`: reproducible seed and explicitly gated OpenShell launch/validation scripts.
 * `docs`: architecture/threat model, model card, isolation evidence guide, and ten-minute demo.
 

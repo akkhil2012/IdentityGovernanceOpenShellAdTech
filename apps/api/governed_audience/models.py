@@ -35,6 +35,9 @@ class Grant(BaseModel):
     expires_at: datetime
     policy_version: str
     actor: str
+    # The human supplies intent, but is deliberately not the workload identity.
+    on_behalf_of: str = "Fabio"
+    identity_basis: str = "runtime-task-context"
     nonce: str
 
 
