@@ -1,0 +1,7 @@
+services:
+  intent: {build: {context: .., dockerfile: agents/Dockerfile.worker, args: {AGENT_NAME: intent}}, image: governed-audience/intent:0.1.0}
+  profile: {build: {context: .., dockerfile: agents/Dockerfile.worker, args: {AGENT_NAME: profile}}, image: governed-audience/profile:0.1.0}
+  propensity: {build: {context: .., dockerfile: agents/Dockerfile.worker, args: {AGENT_NAME: propensity}}, image: governed-audience/propensity:0.1.0}
+  audience: {build: {context: .., dockerfile: agents/Dockerfile.worker, args: {AGENT_NAME: audience}}, image: governed-audience/audience:0.1.0}
+  consent: {build: {context: .., dockerfile: agents/Dockerfile.worker, args: {AGENT_NAME: consent}}, image: governed-audience/consent:0.1.0}
+  activation: {build: {context: .., dockerfile: agents/Dockerfile.worker, args: {AGENT_NAME: activation}}, image: governed-audience/activation:0.1.0}

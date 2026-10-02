@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools==78.1.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "governed-audience"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["fastapi==0.115.12", "sqlalchemy==2.0.40", "pydantic-settings==2.9.1", "httpx==0.28.1"]
+
+[tool.pytest.ini_options]
+pythonpath = ["apps/api"]
+testpaths = ["tests"]
